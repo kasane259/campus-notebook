@@ -115,25 +115,43 @@ elif menu == "🔧 宿舍报修":
         st.info("宿舍东西坏了，把报修进度记在这里，不用反复问宿管！")
 
 # ------------------- 备份（补全导入恢复） -------------------
-from io import BytesIO
+# ---------------- 备份（补全导入恢复） ----------------
+from io import StringIO
+import json
 tab1, tab2 = st.tabs(["导出备份", "导入恢复"])
 with tab1:
-    buf = BytesIO()
-    with pd.ExcelWriter(buf, engine="openpyxl") as writer:
-        pd.DataFrame(st.session_state.express_list).to_excel(writer, sheet_name="快递", index=False)
-        pd.DataFrame(st.session_state.todo_list).to_excel(writer, sheet_name="待办", index=False)
-        pd.DataFrame(st.session_state.repair_list).to_excel(writer, sheet_name="报修", index=False)
-    buf.seek(0)
+    all_data = {
+        "快递": st.session_state.express_list,
+        "待办": st.session_state.todo_list,
+        "报修": st.session_state.repair_list
+    }
+    json_text = json.dumps(all_data, ensure_ascii=False, indent=2)
     st.download_button(
-        label="📥 下载Excel备份文件",
-        data=buf,
-        file_name="campus_backup.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        label="📥 下载完整备份（json，用于恢复）",
+        data=json_text,
+        file_name="campus-backup.json",
+        mime="application/json"
     )
+
+    st.divider()
+    st.write("📄 导出CSV表格（WPS打开查看）")
+    s_express = StringIO()
+    pd.DataFrame(st.session_state.express_list).to_csv(s_express, index=False, encoding="utf-8-sig")
+    st.download_button("快递记录.csv", s_express.getvalue(), "快递记录.csv", mime="text/csv")
+
+    s_todo = StringIO()
+    pd.DataFrame(st.session_state.todo_list).to_csv(s_todo, index=False, encoding="utf-8-sig")
+    st.download_button("待办记录.csv", s_todo.getvalue(), "待办记录.csv", mime="text/csv")
+
+    s_repair = StringIO()
+    pd.DataFrame(st.session_state.repair_list).to_csv(s_repair, index=False, encoding="utf-8-sig")
+    st.download_button("报修记录.csv", s_repair.getvalue(), "报修记录.csv", mime="text/csv")
+
 with tab2:
-    uploaded_xlsx = st.file_uploader("上传 campus_backup.xlsx", type="xlsx")
-    if uploaded_xlsx is not None:
-        st.session_state.express_list = pd.read_excel(uploaded_xlsx, sheet_name="快递").to_dict("records")
-        st.session_state.todo_list = pd.read_excel(uploaded_xlsx, sheet_name="待办").to_dict("records")
-        st.session_state.repair_list = pd.read_excel(uploaded_xlsx, sheet_name="报修").to_dict("records")
-        st.success("✅ Excel导入成功！")
+    up_file = st.file_uploader("上传 json 备份文件恢复数据", type="json")
+    if up_file:
+        restore = json.load(up_file)
+        st.session_state.express_list = restore.get("快递", [])
+        st.session_state.todo_list = restore.get("待办", [])
+        st.session_state.repair_list = restore.get("报修", [])
+        st.success("✅ 数据恢复成功！")
