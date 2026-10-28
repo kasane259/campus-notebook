@@ -115,32 +115,25 @@ elif menu == "🔧 宿舍报修":
         st.info("宿舍东西坏了，把报修进度记在这里，不用反复问宿管！")
 
 # ------------------- 备份（补全导入恢复） -------------------
-elif menu == "💾 数据备份":
-    st.header("💾 数据备份")
-    st.warning("⚠️ Streamlit网页刷新/关闭后内存数据清空，一定要导出备份！")
-
-    tab1, tab2 = st.tabs(["📥 导出备份", "📤 导入恢复"])
-    with tab1:
-        buf = BytesIO()
-        with pd.ExcelWriter(buf, engine="openpyxl") as writer:
-            pd.DataFrame(st.session_state.express_list).to_excel(writer, sheet_name="快递记录", index=False)
-            pd.DataFrame(st.session_state.todo_list).to_excel(writer, sheet_name="待办事项", index=False)
-            pd.DataFrame(st.session_state.repair_list).to_excel(writer, sheet_name="报修记录", index=False)
-        buf.seek(0)
-        st.download_button("下载Excel备份文件", data=buf, file_name="校园备忘录备份.xlsx",
-                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-    with tab2:
-        upload_file = st.file_uploader("上传备份的.xlsx文件恢复数据", type="xlsx")
-        if upload_file is not None and st.button("✅ 确认导入（覆盖当前数据）"):
-            xls = pd.ExcelFile(upload_file)
-            if "快递记录" in xls.sheet_names:
-                st.session_state.express_list = pd.read_excel(xls, sheet_name="快递记录").to_dict("records")
-            if "待办事项" in xls.sheet_names:
-                todo_df = pd.read_excel(xls, sheet_name="待办事项")
-                todo_df["完成状态"] = todo_df["完成状态"].astype(bool)
-                st.session_state.todo_list = todo_df.to_dict("records")
-            if "报修记录" in xls.sheet_names:
-                st.session_state.repair_list = pd.read_excel(xls, sheet_name="报修记录").to_dict("records")
-            st.success("数据导入成功！切换页面查看")
-            st.rerun()
+from io import BytesIO
+tab1, tab2 = st.tabs(["导出备份", "导入恢复"])
+with tab1:
+    buf = BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as writer:
+        pd.DataFrame(st.session_state.express_list).to_excel(writer, sheet_name="快递", index=False)
+        pd.DataFrame(st.session_state.todo_list).to_excel(writer, sheet_name="待办", index=False)
+        pd.DataFrame(st.session_state.repair_list).to_excel(writer, sheet_name="报修", index=False)
+    buf.seek(0)
+    st.download_button(
+        label="📥 下载Excel备份文件",
+        data=buf,
+        file_name="campus_backup.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+with tab2:
+    uploaded_xlsx = st.file_uploader("上传 campus_backup.xlsx", type="xlsx")
+    if uploaded_xlsx is not None:
+        st.session_state.express_list = pd.read_excel(uploaded_xlsx, sheet_name="快递").to_dict("records")
+        st.session_state.todo_list = pd.read_excel(uploaded_xlsx, sheet_name="待办").to_dict("records")
+        st.session_state.repair_list = pd.read_excel(uploaded_xlsx, sheet_name="报修").to_dict("records")
+        st.success("✅ Excel导入成功！")
