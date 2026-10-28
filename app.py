@@ -116,7 +116,8 @@ elif menu == "🔧 宿舍报修":
 
 # ------------------- 备份（补全导入恢复） -------------------
 # ---------------- 备份（补全导入恢复） ----------------
-from io import StringIO
+# ---------------- 备份（补全导入恢复） ----------------
+from io import BytesIO
 import json
 tab1, tab2 = st.tabs(["导出备份", "导入恢复"])
 with tab1:
@@ -134,18 +135,18 @@ with tab1:
     )
 
     st.divider()
-    st.write("📄 导出CSV表格（WPS打开查看）")
-    s_express = StringIO()
-    pd.DataFrame(st.session_state.express_list).to_csv(s_express, index=False, encoding="utf-8-sig")
-    st.download_button("快递记录.csv", s_express.getvalue(), "快递记录.csv", mime="text/csv")
+    st.write("📄 导出CSV表格（Excel/WPS双击打开不乱码）")
+    buf_express = BytesIO()
+    pd.DataFrame(st.session_state.express_list).to_csv(buf_express, index=False, encoding="utf-8-sig")
+    st.download_button("快递记录.csv", buf_express.getvalue(), "快递记录.csv", mime="text/csv")
 
-    s_todo = StringIO()
-    pd.DataFrame(st.session_state.todo_list).to_csv(s_todo, index=False, encoding="utf-8-sig")
-    st.download_button("待办记录.csv", s_todo.getvalue(), "待办记录.csv", mime="text/csv")
+    buf_todo = BytesIO()
+    pd.DataFrame(st.session_state.todo_list).to_csv(buf_todo, index=False, encoding="utf-8-sig")
+    st.download_button("待办记录.csv", buf_todo.getvalue(), "待办记录.csv", mime="text/csv")
 
-    s_repair = StringIO()
-    pd.DataFrame(st.session_state.repair_list).to_csv(s_repair, index=False, encoding="utf-8-sig")
-    st.download_button("报修记录.csv", s_repair.getvalue(), "报修记录.csv", mime="text/csv")
+    buf_repair = BytesIO()
+    pd.DataFrame(st.session_state.repair_list).to_csv(buf_repair, index=False, encoding="utf-8-sig")
+    st.download_button("报修记录.csv", buf_repair.getvalue(), "报修记录.csv", mime="text/csv")
 
 with tab2:
     up_file = st.file_uploader("上传 json 备份文件恢复数据", type="json")
